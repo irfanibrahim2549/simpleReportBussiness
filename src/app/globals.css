@@ -1,0 +1,85 @@
+@import "tailwindcss";
+
+:root {
+  --background: #0D0D0D;
+  --foreground: #FFFFFF;
+  --surface: #1A1A1C;
+  --surface-muted: #242426;
+  --accent-lime: #D4F634;
+  --accent-contrast: #0D0D0D;
+  --text-muted: #8E8E93;
+}
+
+body {
+  background-color: #0D0D0D;
+  color: #FFFFFF;
+  font-family: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom Scrollbar for sleek dark look */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0D0D0D;
+}
+::-webkit-scrollbar-thumb {
+  background: #242426;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #3A3A3D;
+}
+
+/* Diagonal Striped Bar for Deficit / Unfinished Target */
+.bg-stripes-dark {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    rgba(13, 13, 13, 0.55),
+    rgba(13, 13, 13, 0.55) 6px,
+    rgba(13, 13, 13, 0.2) 6px,
+    rgba(13, 13, 13, 0.2) 12px
+  );
+}
+
+.bg-stripes-lime {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    rgba(212, 246, 52, 0.35),
+    rgba(212, 246, 52, 0.35) 6px,
+    rgba(212, 246, 52, 0.1) 6px,
+    rgba(212, 246, 52, 0.1) 12px
+  );
+}
+
+/* Animation utilities */
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-up {
+  animation: slideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.2s ease-out forwards;
+}
