@@ -11,7 +11,8 @@ import {
   syncInsertIncome, 
   syncDeleteExpense, 
   syncDeleteIncome, 
-  syncSeedInitialData 
+  syncSeedInitialData,
+  syncClearAllData
 } from '@/lib/supabaseSync';
 
 const APP_ENV = process.env.NEXT_PUBLIC_APP_ENV || 'production';
@@ -437,6 +438,7 @@ export const TrackerProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setExpenses([]);
     setIncomes([]);
     persist([], [], []);
+    syncClearAllData();
   }, [persist]);
 
   return (

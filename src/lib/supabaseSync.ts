@@ -177,3 +177,17 @@ export async function syncSeedInitialData(cycles: CapitalCycle[], expenses: Expe
     console.error('Failed to seed Supabase initial data:', e);
   }
 }
+
+/**
+ * Wipe all data from Supabase
+ */
+export async function syncClearAllData() {
+  if (!isSupabaseConfigured || !supabase) return;
+  try {
+    await supabase.from('income_items').delete().neq('id', '');
+    await supabase.from('expense_items').delete().neq('id', '');
+    await supabase.from('capital_cycles').delete().neq('id', '');
+  } catch (e) {
+    console.error('Failed to clear Supabase data:', e);
+  }
+}
