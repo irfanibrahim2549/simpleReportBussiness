@@ -12,7 +12,8 @@ import {
   Trash2, 
   ChefHat, 
   TrendingUp, 
-  ShieldCheck 
+  ShieldCheck,
+  Cloud
 } from 'lucide-react';
 import { useTracker } from '@/context/TrackerContext';
 
@@ -23,7 +24,7 @@ interface NavigationDrawerProps {
 
 export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({ isOpen, onClose }) => {
   const pathname = usePathname();
-  const { resetToDefaultData, clearAllData, appEnv } = useTracker();
+  const { resetToDefaultData, clearAllData, appEnv, isSupabaseConnected, syncStatus } = useTracker();
 
   if (!isOpen) return null;
 
@@ -132,14 +133,36 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({ isOpen, onCl
         </div>
 
         {/* Footer info */}
-        <div className="mt-4 pt-4 border-t border-[#242426] flex items-center justify-between text-[11px] text-[#8E8E93]">
-          <span className="flex items-center gap-1.5">
-            <span className={`w-2 h-2 rounded-full ${appEnv === 'staging' ? 'bg-amber-400' : 'bg-[#D4F634]'} animate-pulse`}></span>
-            {appEnv === 'staging' ? 'Staging LocalDB' : 'Live LocalDB'}
-          </span>
-          <span className="font-semibold uppercase text-[10px] px-1.5 py-0.5 rounded bg-[#1A1A1C] border border-[#242426]">
-            {appEnv}
-          </span>
+        <div className="mt-4 pt-4 border-t border-[#242426] space-y-2 text-[11px] text-[#8E8E93]">
+          <div className="flex items-center justify-between">
+            <span className="flex items-center gap-1.5">
+              <span className={`w-2 h-2 rounded-full ${appEnv === 'staging' ? 'bg-amber-400' : 'bg-[#D4F634]'} animate-pulse`}></span>
+              {appEnv === 'staging' ? 'Staging LocalDB' : 'Live LocalDB'}
+            </span>
+            <span className="font-semibold uppercase text-[10px] px-1.5 py-0.5 rounded bg-[#1A1A1C] border border-[#242426]">
+              {appEnv}
+            </span>
+          </div>
+
+          <div className="flex items-center justify-between pt-1 text-[10px]">
+            <span className="flex items-center gap-1 text-[#8E8E93]">
+              <Cloud className="w-3 h-3" />
+              <span>Supabase Cloud:</span>
+            </span>
+            <span className={`font-semibold ${
+              isSupabaseConnected && syncStatus === 'synced'
+                ? 'text-[#D4F634]'
+                : isSupabaseConnected && syncStatus === 'syncing'
+                ? 'text-amber-400'
+                : isSupabaseConnected && syncStatus === 'error'
+                ? 'text-red-400'
+                : 'text-[#8E8E93]'
+            }`}>
+              {isSupabaseConnected 
+                ? (syncStatus === 'synced' ? '🟢 Terhubung' : syncStatus === 'syncing' ? '🟡 Menyinkron...' : '🔴 Gagal') 
+                : '⚪ Offline / Lokal'}
+            </span>
+          </div>
         </div>
       </aside>
     </div>

@@ -3,6 +3,16 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { CapitalCycle, ExpenseItem, IncomeItem, PlatformChannel } from '@/types';
 import { INITIAL_CYCLES, INITIAL_EXPENSES, INITIAL_INCOMES } from '@/lib/seedData';
+import { isSupabaseConfigured } from '@/lib/supabase';
+import { 
+  fetchAllFromSupabase, 
+  syncUpsertCycle, 
+  syncInsertExpense, 
+  syncInsertIncome, 
+  syncDeleteExpense, 
+  syncDeleteIncome, 
+  syncSeedInitialData 
+} from '@/lib/supabaseSync';
 
 const APP_ENV = process.env.NEXT_PUBLIC_APP_ENV || 'production';
 const STORAGE_PREFIX = APP_ENV === 'staging' ? 'martabak_staging_' : 'martabak_live_';
@@ -17,8 +27,12 @@ export type RecentTransaction =
   | ({ type: 'expense' } & ExpenseItem)
   | ({ type: 'income' } & IncomeItem);
 
+export type SyncStatus = 'local' | 'synced' | 'syncing' | 'error';
+
 interface TrackerContextType {
   appEnv: string;
+  isSupabaseConnected: boolean;
+  syncStatus: SyncStatus;
   cycles: CapitalCycle[];
   expenses: ExpenseItem[];
   incomes: IncomeItem[];
@@ -71,36 +85,7 @@ export const TrackerProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [expenses, setExpenses] = useState<ExpenseItem[]>([]);
   const [incomes, setIncomes] = useState<IncomeItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-
-  // Initialize from LocalStorage or Seed Data
-  useEffect(() => {
-    try {
-      const storedCycles = localStorage.getItem(STORAGE_KEYS.CYCLES);
-      const storedExpenses = localStorage.getItem(STORAGE_KEYS.EXPENSES);
-      const storedIncomes = localStorage.getItem(STORAGE_KEYS.INCOMES);
-
-      if (storedCycles && storedExpenses && storedIncomes) {
-        setCycles(JSON.parse(storedCycles));
-        setExpenses(JSON.parse(storedExpenses));
-        setIncomes(JSON.parse(storedIncomes));
-      } else {
-        // Initialize with realistic seed data
-        setCycles(INITIAL_CYCLES);
-        setExpenses(INITIAL_EXPENSES);
-        setIncomes(INITIAL_INCOMES);
-        localStorage.setItem(STORAGE_KEYS.CYCLES, JSON.stringify(INITIAL_CYCLES));
-        localStorage.setItem(STORAGE_KEYS.EXPENSES, JSON.stringify(INITIAL_EXPENSES));
-        localStorage.setItem(STORAGE_KEYS.INCOMES, JSON.stringify(INITIAL_INCOMES));
-      }
-    } catch (e) {
-      console.error('Error loading data from localStorage:', e);
-      setCycles(INITIAL_CYCLES);
-      setExpenses(INITIAL_EXPENSES);
-      setIncomes(INITIAL_INCOMES);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>(isSupabaseConfigured ? 'syncing' : 'local');
 
   // Save changes to LocalStorage
   const persist = useCallback((newCycles: CapitalCycle[], newExpenses: ExpenseItem[], newIncomes: IncomeItem[]) => {
@@ -113,11 +98,67 @@ export const TrackerProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   }, []);
 
+  // Initialize from LocalStorage or Supabase
+  useEffect(() => {
+    async function initializeData() {
+      let initialCycles = INITIAL_CYCLES;
+      let initialExpenses = INITIAL_EXPENSES;
+      let initialIncomes = INITIAL_INCOMES;
+
+      try {
+        const storedCycles = localStorage.getItem(STORAGE_KEYS.CYCLES);
+        const storedExpenses = localStorage.getItem(STORAGE_KEYS.EXPENSES);
+        const storedIncomes = localStorage.getItem(STORAGE_KEYS.INCOMES);
+
+        if (storedCycles && storedExpenses && storedIncomes) {
+          initialCycles = JSON.parse(storedCycles);
+          initialExpenses = JSON.parse(storedExpenses);
+          initialIncomes = JSON.parse(storedIncomes);
+        } else {
+          localStorage.setItem(STORAGE_KEYS.CYCLES, JSON.stringify(INITIAL_CYCLES));
+          localStorage.setItem(STORAGE_KEYS.EXPENSES, JSON.stringify(INITIAL_EXPENSES));
+          localStorage.setItem(STORAGE_KEYS.INCOMES, JSON.stringify(INITIAL_INCOMES));
+        }
+      } catch (e) {
+        console.error('Error loading data from localStorage:', e);
+      } finally {
+        setCycles(initialCycles);
+        setExpenses(initialExpenses);
+        setIncomes(initialIncomes);
+        setIsLoading(false);
+      }
+
+      // Check & sync with Supabase if configured
+      if (isSupabaseConfigured) {
+        setSyncStatus('syncing');
+        const remote = await fetchAllFromSupabase();
+        if (remote) {
+          if (remote.cycles.length > 0) {
+            setCycles(remote.cycles);
+            setExpenses(remote.expenses);
+            setIncomes(remote.incomes);
+            persist(remote.cycles, remote.expenses, remote.incomes);
+            setSyncStatus('synced');
+          } else {
+            // Supabase is empty, seed initial data
+            await syncSeedInitialData(initialCycles, initialExpenses, initialIncomes);
+            setSyncStatus('synced');
+          }
+        } else {
+          setSyncStatus('error');
+        }
+      } else {
+        setSyncStatus('local');
+      }
+    }
+
+    initializeData();
+  }, [persist]);
+
   // Find active or latest cycle
   const activeCycle = useMemo(() => {
     const active = cycles.find((c) => c.status === 'active');
     if (active) return active;
-    // If none is active, return the newest cycle
     if (cycles.length > 0) {
       return [...cycles].sort((a, b) => b.cycleNumber - a.cycleNumber)[0];
     }
@@ -235,7 +276,6 @@ export const TrackerProvider: React.FC<{ children: React.ReactNode }> = ({ child
               ...c,
               totalExpense: newTotalExpense,
               netProfit: newNetProfit,
-              // If it was somehow settled, recalculate
               status: c.totalIncome >= newTotalExpense && newTotalExpense > 0 ? 'closed_profit' : 'active',
             };
           }
@@ -257,6 +297,13 @@ export const TrackerProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setExpenses(updatedExpenses);
       persist(updatedCycles, updatedExpenses, incomes);
 
+      // Async sync to Supabase
+      const affectedCycle = updatedCycles.find((c) => c.id === targetCycleId);
+      if (affectedCycle) {
+        syncUpsertCycle(affectedCycle);
+      }
+      syncInsertExpense(newExpenseItem);
+
       return { cycleId: targetCycleId };
     },
     [cycles, expenses, incomes, persist]
@@ -277,11 +324,9 @@ export const TrackerProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
       if (!targetCycle) {
         if (updatedCycles.length > 0) {
-          // Associate to latest cycle as overflow profit (FR-01.4)
           targetCycle = [...updatedCycles].sort((a, b) => b.cycleNumber - a.cycleNumber)[0];
           targetCycleId = targetCycle.id;
         } else {
-          // If completely empty, create initial cycle
           targetCycleId = 'cycle-1-' + Date.now();
           const firstCycle: CapitalCycle = {
             id: targetCycleId,
@@ -337,6 +382,13 @@ export const TrackerProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setIncomes(updatedIncomes);
       persist(updatedCycles, expenses, updatedIncomes);
 
+      // Async sync to Supabase
+      const affectedCycle = updatedCycles.find((c) => c.id === targetCycleId);
+      if (affectedCycle) {
+        syncUpsertCycle(affectedCycle);
+      }
+      syncInsertIncome(newIncomeItem);
+
       return { cycleId: targetCycleId, settledJustNow };
     },
     [cycles, expenses, incomes, persist]
@@ -349,6 +401,10 @@ export const TrackerProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setExpenses(remainingExpenses);
       setCycles(recomputed);
       persist(recomputed, remainingExpenses, incomes);
+
+      // Async sync to Supabase
+      syncDeleteExpense(id);
+      recomputed.forEach((c) => syncUpsertCycle(c));
     },
     [expenses, cycles, incomes, persist]
   );
@@ -360,6 +416,10 @@ export const TrackerProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setIncomes(remainingIncomes);
       setCycles(recomputed);
       persist(recomputed, expenses, remainingIncomes);
+
+      // Async sync to Supabase
+      syncDeleteIncome(id);
+      recomputed.forEach((c) => syncUpsertCycle(c));
     },
     [incomes, cycles, expenses, persist]
   );
@@ -369,6 +429,7 @@ export const TrackerProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setExpenses(INITIAL_EXPENSES);
     setIncomes(INITIAL_INCOMES);
     persist(INITIAL_CYCLES, INITIAL_EXPENSES, INITIAL_INCOMES);
+    syncSeedInitialData(INITIAL_CYCLES, INITIAL_EXPENSES, INITIAL_INCOMES);
   }, [persist]);
 
   const clearAllData = useCallback(() => {
@@ -382,6 +443,8 @@ export const TrackerProvider: React.FC<{ children: React.ReactNode }> = ({ child
     <TrackerContext.Provider
       value={{
         appEnv: APP_ENV,
+        isSupabaseConnected: isSupabaseConfigured,
+        syncStatus,
         cycles,
         expenses,
         incomes,
