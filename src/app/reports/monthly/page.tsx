@@ -6,12 +6,10 @@ import {
   TrendingUp, 
   ArrowDownLeft, 
   ArrowUpRight, 
-  CheckCircle2, 
   Sparkles, 
-  PieChart,
-  ChevronLeft,
-  ChevronRight,
-  Info
+  PieChart, 
+  ChevronLeft, 
+  ChevronRight 
 } from 'lucide-react';
 import { Navbar } from '@/components/Navbar';
 import { useTracker } from '@/context/TrackerContext';

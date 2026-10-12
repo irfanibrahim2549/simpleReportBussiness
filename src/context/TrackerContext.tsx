@@ -186,13 +186,11 @@ export const TrackerProvider: React.FC<{ children: React.ReactNode }> = ({ child
   }, [cycles]);
 
   // Today calculations
-  const [todayDateString, setTodayDateString] = useState<string>('2026-10-11');
-
-  useEffect(() => {
+  const [todayDateString] = useState<string>(() => {
+    if (typeof window === 'undefined') return '2026-10-11';
     const now = new Date();
-    const str = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-    setTodayDateString(str);
-  }, []);
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  });
 
   const todayExpenseTotal = useMemo(() => {
     return expenses

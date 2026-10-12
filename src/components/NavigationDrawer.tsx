@@ -11,8 +11,6 @@ import {
   RotateCcw, 
   Trash2, 
   ChefHat, 
-  TrendingUp, 
-  ShieldCheck,
   Cloud
 } from 'lucide-react';
 import { useTracker } from '@/context/TrackerContext';

@@ -3,7 +3,6 @@
 import React from 'react';
 import { 
   Calendar, 
-  CalendarRange, 
   Clock, 
   Filter, 
   ChevronLeft, 

@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Plus, ArrowDownLeft, ArrowUpRight } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight } from 'lucide-react';
 
 interface FloatingDockProps {
   onOpenExpense: () => void;

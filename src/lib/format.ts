@@ -47,7 +47,6 @@ export function formatTimeShort(dateString: string): string {
 }
 
 export function formatDateTime(dateString: string): string {
-  const date = new Date(dateString);
   return `${formatDateShort(dateString)}, ${formatTimeShort(dateString)}`;
 }
 

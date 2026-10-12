@@ -1,13 +1,12 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   Repeat, 
   Zap, 
   TrendingUp, 
   CheckCircle2, 
   Clock, 
-  ShoppingBag, 
   ChevronRight, 
   ArrowDownLeft, 
   ArrowUpRight 
@@ -31,24 +30,24 @@ export default function CycleHistoryPage() {
 
   // Filter States: Default is 'week' (1 minggu dari today)
   const [filterMode, setFilterMode] = useState<FilterMode>('week');
-  const [startDate, setStartDate] = useState<string>('2026-10-04');
-  const [endDate, setEndDate] = useState<string>('2026-10-11');
-  const [selectedMonth, setSelectedMonth] = useState<number>(9); // 0-indexed (9 = Oktober)
-  const [selectedYear, setSelectedYear] = useState<number>(2026);
-
-  // Compute 1 week window safely in useEffect
-  useEffect(() => {
-    const today = new Date();
-    const endStr = today.toISOString().slice(0, 10);
-    const pastWeek = new Date(today);
-    pastWeek.setDate(today.getDate() - 7);
-    const startStr = pastWeek.toISOString().slice(0, 10);
-
-    setEndDate(endStr);
-    setStartDate(startStr);
-    setSelectedMonth(today.getMonth());
-    setSelectedYear(today.getFullYear());
-  }, []);
+  const [startDate, setStartDate] = useState<string>(() => {
+    if (typeof window === 'undefined') return '2026-10-04';
+    const past = new Date();
+    past.setDate(past.getDate() - 7);
+    return past.toISOString().slice(0, 10);
+  });
+  const [endDate, setEndDate] = useState<string>(() => {
+    if (typeof window === 'undefined') return '2026-10-11';
+    return new Date().toISOString().slice(0, 10);
+  });
+  const [selectedMonth, setSelectedMonth] = useState<number>(() => {
+    if (typeof window === 'undefined') return 9;
+    return new Date().getMonth();
+  });
+  const [selectedYear, setSelectedYear] = useState<number>(() => {
+    if (typeof window === 'undefined') return 2026;
+    return new Date().getFullYear();
+  });
 
   const handleResetToDefault = () => {
     const today = new Date();

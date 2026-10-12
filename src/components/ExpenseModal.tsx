@@ -1,9 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { X, ShoppingBag, Calendar, Sparkles } from 'lucide-react';
 import { useTracker } from '@/context/TrackerContext';
-import { toLocalDatetimeInputValue } from '@/lib/format';
 
 interface ExpenseModalProps {
   isOpen: boolean;
@@ -16,13 +15,16 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose }) =
   const [notes, setNotes] = useState<string>('');
   const [datetime, setDatetime] = useState<string>('');
 
-  useEffect(() => {
-    if (isOpen) {
-      setRawAmount('');
-      setNotes('');
-      setDatetime(toLocalDatetimeInputValue(new Date()));
-    }
-  }, [isOpen]);
+  const resetForm = () => {
+    setRawAmount('');
+    setNotes('');
+    setDatetime('');
+  };
+
+  const handleClose = () => {
+    resetForm();
+    onClose();
+  };
 
   if (!isOpen) return null;
 
@@ -53,7 +55,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose }) =
       createdAt: isoDate,
     });
 
-    onClose();
+    handleClose();
   };
 
   return (
@@ -61,7 +63,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose }) =
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-black/80 backdrop-blur-sm transition-opacity"
-        onClick={onClose}
+        onClick={handleClose}
       />
 
       {/* Bottom Sheet Container */}
@@ -80,7 +82,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose }) =
             </div>
           </div>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="w-8 h-8 rounded-full bg-[#1F1F23] text-[#8E8E93] hover:text-white flex items-center justify-center transition-colors"
           >
             <X className="w-4 h-4" />

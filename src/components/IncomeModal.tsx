@@ -1,11 +1,10 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { X, ArrowUpRight, Calendar, Sparkles } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { useTracker } from '@/context/TrackerContext';
 import { PlatformChannel, CHANNEL_CONFIG } from '@/types';
-import { toLocalDatetimeInputValue } from '@/lib/format';
 
 interface IncomeModalProps {
   isOpen: boolean;
@@ -18,12 +17,15 @@ export const IncomeModal: React.FC<IncomeModalProps> = ({ isOpen, onClose }) => 
   const [rawAmount, setRawAmount] = useState<string>('');
   const [datetime, setDatetime] = useState<string>('');
 
-  useEffect(() => {
-    if (isOpen) {
-      setRawAmount('');
-      setDatetime(toLocalDatetimeInputValue(new Date()));
-    }
-  }, [isOpen]);
+  const resetForm = () => {
+    setRawAmount('');
+    setDatetime('');
+  };
+
+  const handleClose = () => {
+    resetForm();
+    onClose();
+  };
 
   if (!isOpen) return null;
 
@@ -65,7 +67,7 @@ export const IncomeModal: React.FC<IncomeModalProps> = ({ isOpen, onClose }) => 
       alert('🎉 SELAMAT! Siklus modal ini resmi LUNAS & mencapai Break-Even Point!');
     }
 
-    onClose();
+    handleClose();
   };
 
   return (
@@ -73,7 +75,7 @@ export const IncomeModal: React.FC<IncomeModalProps> = ({ isOpen, onClose }) => 
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-black/80 backdrop-blur-sm transition-opacity"
-        onClick={onClose}
+        onClick={handleClose}
       />
 
       {/* Bottom Sheet */}
@@ -92,7 +94,7 @@ export const IncomeModal: React.FC<IncomeModalProps> = ({ isOpen, onClose }) => 
             </div>
           </div>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="w-8 h-8 rounded-full bg-[#1F1F23] text-[#8E8E93] hover:text-white flex items-center justify-center transition-colors"
           >
             <X className="w-4 h-4" />
