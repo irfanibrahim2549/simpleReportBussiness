@@ -102,9 +102,9 @@ export const TrackerProvider: React.FC<{ children: React.ReactNode }> = ({ child
   // Initialize from LocalStorage or Supabase
   useEffect(() => {
     async function initializeData() {
-      let initialCycles = INITIAL_CYCLES;
-      let initialExpenses = INITIAL_EXPENSES;
-      let initialIncomes = INITIAL_INCOMES;
+      let initialCycles: CapitalCycle[] = [];
+      let initialExpenses: ExpenseItem[] = [];
+      let initialIncomes: IncomeItem[] = [];
 
       try {
         const storedCycles = localStorage.getItem(STORAGE_KEYS.CYCLES);
@@ -116,9 +116,13 @@ export const TrackerProvider: React.FC<{ children: React.ReactNode }> = ({ child
           initialExpenses = JSON.parse(storedExpenses);
           initialIncomes = JSON.parse(storedIncomes);
         } else {
-          localStorage.setItem(STORAGE_KEYS.CYCLES, JSON.stringify(INITIAL_CYCLES));
-          localStorage.setItem(STORAGE_KEYS.EXPENSES, JSON.stringify(INITIAL_EXPENSES));
-          localStorage.setItem(STORAGE_KEYS.INCOMES, JSON.stringify(INITIAL_INCOMES));
+          // Default: clean state without demo data
+          initialCycles = [];
+          initialExpenses = [];
+          initialIncomes = [];
+          localStorage.setItem(STORAGE_KEYS.CYCLES, JSON.stringify([]));
+          localStorage.setItem(STORAGE_KEYS.EXPENSES, JSON.stringify([]));
+          localStorage.setItem(STORAGE_KEYS.INCOMES, JSON.stringify([]));
         }
       } catch (e) {
         console.error('Error loading data from localStorage:', e);
@@ -134,17 +138,12 @@ export const TrackerProvider: React.FC<{ children: React.ReactNode }> = ({ child
         setSyncStatus('syncing');
         const remote = await fetchAllFromSupabase();
         if (remote) {
-          if (remote.cycles.length > 0) {
-            setCycles(remote.cycles);
-            setExpenses(remote.expenses);
-            setIncomes(remote.incomes);
-            persist(remote.cycles, remote.expenses, remote.incomes);
-            setSyncStatus('synced');
-          } else {
-            // Supabase is empty, seed initial data
-            await syncSeedInitialData(initialCycles, initialExpenses, initialIncomes);
-            setSyncStatus('synced');
-          }
+          // Sync with remote data (even if empty)
+          setCycles(remote.cycles);
+          setExpenses(remote.expenses);
+          setIncomes(remote.incomes);
+          persist(remote.cycles, remote.expenses, remote.incomes);
+          setSyncStatus('synced');
         } else {
           setSyncStatus('error');
         }
