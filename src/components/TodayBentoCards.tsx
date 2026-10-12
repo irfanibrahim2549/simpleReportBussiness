@@ -38,7 +38,7 @@ export const TodayBentoCards: React.FC = () => {
       <div className="bg-[#1A1A1C] border border-[#242426] rounded-3xl p-4.5 flex flex-col justify-between hover:border-[#3A3A3D] transition-colors">
         <div className="flex items-center justify-between mb-3">
           <span className="text-[11px] font-semibold text-[#8E8E93] uppercase tracking-wider">
-            Pendapatan Masuk
+            Pendapatan Hari Ini
           </span>
           <div className="w-8 h-8 rounded-full bg-[#D4F634]/15 text-[#D4F634] flex items-center justify-center">
             <ArrowUpRight className="w-4 h-4" />
